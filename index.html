@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>NGL Clone</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: linear-gradient(to bottom, #ff007f, #ff7f50);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .card {
+      background: transparent;
+      padding: 20px;
+      margin-top: 30px;
+      width: 90%;
+      text-align: left;
+      color: black;
+    }
+    .message-box {
+      border-radius: 25px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .message-header {
+      background: white;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      border-top-left-radius: 25px;
+      border-top-right-radius: 25px;
+    }
+    .message-header div {
+      margin-left: 10px;
+    }
+    .question-box {
+      background: rgba(255, 255, 255, 0.25);
+      color: #333;
+      font-size: 1.2em;
+      min-height: 5em;
+      text-align: left;
+      position: relative;
+      border-bottom-left-radius: 25px;
+      border-bottom-right-radius: 25px;
+    }
+    .question-input {
+      background: transparent;
+      border: none;
+      width: 100%;
+      padding: 20px;
+      font-size: 1.2em;
+      color: #333;
+      outline: none;
+      resize: none;
+      height: 5em;
+    }
+    .question-input::placeholder {
+      color: #333;
+    }
+    .dice {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+    }
+    .lock, .send-btn, .send-count {
+      margin-top: 15px;
+    }
+    button.send-btn {
+      margin: 10px;
+      padding: 12px 20px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 1em;
+    }
+    button.get-btn {
+      margin-top: 20px;
+      padding: 12px 20px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 1em;
+      animation: bounce 2s infinite;
+    }
+    .send-count {
+      font-size: 1em;
+      color: white;
+    }
+    .get-btn:hover {
+      background: #222;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .centered-section {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="message-box">
+      <div class="message-header">
+        <img src="profile.jpg" alt="pfp" style="border-radius: 50%; width: 40px; height: 40px;">
+        <div><strong id="userHandle">@deepak_kambala</strong><br>send me anonymous messages!</div>
+      </div>
+      <div class="question-box">
+        <textarea id="questionInput" class="question-input" placeholder="Who is your crush?"></textarea>
+        <img src="https://em-content.zobj.net/thumbs/120/apple/354/game-die_1f3b2.png" class="dice" alt="dice">
+      </div>
+    </div>
+
+    <div class="centered-section">
+      <div class="lock">🔒 anonymous q&a</div>
+      <button class="send-btn">Send!</button>
+      <div class="send-count" id="count">👇 <span id="tapCount">213</span> people just tapped the button 👇</div>
+      <button class="get-btn">Get your own messages!</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuMG8Qe71Im0TzzxvQSaAng_XT5YGz9Rw",
+      authDomain: "ngl-web-69b58.firebaseapp.com",
+      projectId: "ngl-web-69b58",
+      storageBucket: "ngl-web-69b58.firebasestorage.app",
+      messagingSenderId: "194723939725",
+      appId: "1:194723939725:web:59ddf0d45b2e9f819d69c4",
+      measurementId: "G-CGY7G9G7P1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const pathParts = window.location.pathname.split('/');
+    const username = pathParts[1] || "unknown";
+    document.getElementById("userHandle").textContent = `@${username}`;
+
+    document.querySelector(".send-btn").addEventListener("click", async () => {
+      const question = document.getElementById("questionInput").value.trim();
+      if (!question) return alert("Please type a message!");
+
+      try {
+        const ip = await fetch("https://api.ipify.org?format=json")
+          .then(res => res.json())
+          .then(data => data.ip);
+
+        const device = navigator.userAgent;
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const timestamp = new Date().toISOString();
+
+        await addDoc(collection(db, "questions"), {
+          to: username,
+          message: question,
+          ip: ip,
+          device: device,
+          timezone: timezone,
+          timestamp: timestamp
+        });
+
+        alert("✅ Message sent anonymously!");
+        document.getElementById("questionInput").value = "";
+      } catch (err) {
+        console.error(err);
+        alert("❌ Failed to send message.");
+      }
+    });
+
+    const questions = [
+      "Do you like anyone right now?",
+      "What's your biggest fear?",
+      "Who is your crush?",
+      "What makes you happy?",
+      "Most embarrassing moment?"
+    ];
+    let qIndex = 0;
+    const inputEl = document.getElementById("questionInput");
+    setInterval(() => {
+      if (document.activeElement !== inputEl && inputEl.value === '') {
+        qIndex = (qIndex + 1) % questions.length;
+        inputEl.placeholder = questions[qIndex];
+      }
+    }, 3000);
+
+    let count = 213;
+    const tapEl = document.getElementById("tapCount");
+    const increaseCount = () => {
+      if (count < 293) {
+        count++;
+        tapEl.textContent = count;
+        setTimeout(increaseCount, 2000);
+      }
+    };
+    increaseCount();
+  </script>
+</body>
+</html>
